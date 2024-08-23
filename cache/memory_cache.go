@@ -153,3 +153,18 @@ func (m *MemoryCache[K, V]) Get(key K) (V, bool) {
 	// Assert and return the fetched value and true.
 	return value.(V), true
 }
+
+// Contains checks if a given key exists in the cache.
+// This method acquires a lock to ensure thread safety while accessing the cache
+// and then checks if the key is present in the map of cached items.
+func (m *MemoryCache[K, V]) Contains(key K) bool {
+	// Acquire a read lock to ensure thread-safe access to the cache's data structures.
+	m.mutex.RLock()
+	// Ensure the read lock is released when the function returns.
+	defer m.mutex.RUnlock()
+
+	// Check if the key exists in the cache by looking it up in the items map.
+	_, ok := m.items[key]
+	// Return true if the key exists, false otherwise.
+	return ok
+}
