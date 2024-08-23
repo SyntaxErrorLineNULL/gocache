@@ -4,9 +4,10 @@ import (
 	"container/list"
 	"context"
 	"fmt"
-	"golang.org/x/sync/singleflight"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 )
 
 // DefaultTTL is the default time-to-live duration for cache items.
@@ -93,8 +94,6 @@ func (m *MemoryCache[K, V]) Set(key K, value V, ttl time.Duration) {
 	// Also map the key to its corresponding list element in the `expirationBuckets` map.
 	// This helps in managing expirations by keeping track of items and their positions.
 	m.expirationBuckets[key] = element
-
-	return
 }
 
 // Get retrieves an item from the cache by its key.
@@ -245,18 +244,13 @@ func (m *MemoryCache[K, V]) garbageCollection() {
 // deleteExpiredData removes all expired items from the cache.
 // It acquires write lock to ensure thread safety during the cleanup process.
 func (m *MemoryCache[K, V]) deleteExpiredData() {
-	// Declare a variable to keep track of the last processed element in the list.
-	var lastElement *list.Element
-
 	// Lock the mutex to ensure thread-safe access to the cache's data structures.
 	m.mutex.Lock()
 	// Ensure the mutex is unlocked when the function returns.
 	defer m.mutex.Unlock()
 
-	// Start from the back (potentially older entries)
-	lastElement = m.list.Back()
 	// Iterate through the list from the back to the front.
-	for element := lastElement; element != nil; element = element.Prev() {
+	for element := m.list.Back(); element != nil; element = element.Prev() {
 		// Retrieve the cache item from the list element.
 		item := element.Value.(*Item[K, V])
 		// Check if the item has expired.
@@ -267,8 +261,6 @@ func (m *MemoryCache[K, V]) deleteExpiredData() {
 			delete(m.items, item.Key)
 			// Remove the expired item from the expirationBuckets map.
 			delete(m.expirationBuckets, item.Key)
-			// Update the last processed element for the next iteration.
-			lastElement = element.Prev()
 		} else {
 			// Break the loop if we encounter a non-expired item
 			break
