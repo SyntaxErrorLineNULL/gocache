@@ -58,3 +58,36 @@ func BenchmarkMemoryCacheGet(b *testing.B) {
 	// Forcing the garbage collector (GC) to run to clear memory after benchmarking.
 	runtime.GC()
 }
+
+// BenchmarkMemoryCacheDeleteExpiredData benchmark test to add a large amount of data to the cache and measure deleteExpiredData performance.
+func BenchmarkMemoryCacheDeleteExpiredData(b *testing.B) {
+	// Initialize a new MemoryCache instance with a TTL.
+	cache := NewMemoryCache[int, int](context.Background(), DefaultTTL)
+
+	// Number of items to add to the cache.
+	numItems := 100000
+
+	// Add items to the cache with varied expiration times.
+	for i := 0; i < numItems; i++ {
+		var expiration time.Duration
+
+		// Assign a shorter TTL to some items (e.g., 100 milliseconds).
+		if i%100 == 0 {
+			expiration = 100 * time.Millisecond
+		} else {
+			// Assign random expiration times between 1 millisecond and 10 minutes to other items.
+			expiration = time.Duration((i%600)+1) * time.Millisecond
+		}
+
+		cache.Set(i, i, expiration)
+	}
+
+	// Run the benchmark to measure the performance of deleteExpiredData for items with short TTL.
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cache.deleteExpiredData()
+	}
+
+	// Forcing the GC to run to clear all the memory
+	runtime.GC()
+}
