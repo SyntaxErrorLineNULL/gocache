@@ -42,13 +42,25 @@ func NewMemoryCache[K comparable, V any](ctx context.Context, ttl time.Duration)
 	}
 
 	// Initialize a new MemoryCache instance with an empty list and map.
-	return &MemoryCache[K, V]{
+	cache := &MemoryCache[K, V]{
 		parentCtx:         ctx,
 		list:              list.New(),
 		items:             make(map[K]*list.Element),
 		expirationBuckets: make(map[K]*list.Element),
 		ttl:               ttl,
 	}
+
+	// Increment the WaitGroup counter to track the collector goroutine.
+	cache.wg.Add(1)
+
+	// Start the collector goroutine to periodically delete expired items.
+	go func() {
+		// Decrement the WaitGroup counter when the goroutine exits.
+		defer cache.wg.Done()
+		cache.garbageCollection()
+	}()
+
+	return cache
 }
 
 // Set adds or updates an item in the cache with the specified key, value, and TTL (time-to-live).
