@@ -194,3 +194,16 @@ func (m *MemoryCache[K, V]) Remove(key K) bool {
 	// Return false if the key does not exist in the cache.
 	return false
 }
+
+// Len returns the number of items currently stored in the cache.
+// This method is thread-safe and uses a read lock to ensure that the count
+// is accurate without blocking other read operations.
+func (m *MemoryCache[K, V]) Len() int {
+	// Acquire a read lock to ensure thread-safe access to the cache's data structures.
+	m.mutex.RLock()
+	// Ensure the read lock is released when the function returns.
+	defer m.mutex.RUnlock()
+
+	// Return the length of the list, which represents the number of items in the cache.
+	return m.list.Len()
+}
