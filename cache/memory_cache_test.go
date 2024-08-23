@@ -287,4 +287,30 @@ func TestMemoryCache(t *testing.T) {
 		// The assertion checks that the removal operation correctly identifies the key's absence.
 		assert.Equal(t, false, ok, "Expected Remove to return false for non-existent key")
 	})
+
+	// ExpirationRecord verifies the correct behavior of MemoryCache when handling item expiration.
+	// This test ensures that items stored in the cache are properly expired and removed from memory after their TTL (Time-To-Live) has elapsed.
+	// Specifically, it checks that an item added with a short TTL is no longer retrievable after the TTL has passed, confirming that
+	// the expiration mechanism of the cache is functioning as expected.
+	t.Run("ExpirationRecord", func(t *testing.T) {
+		// Initialize a new MemoryCache instance with string keys and integer values.
+		// The cache is created with a global TTL of 150 milliseconds, meaning that items without a specific TTL will expire after this time.
+		cache := NewMemoryCache[string, int](context.Background(), 150*time.Millisecond)
+
+		// Add an item to the cache with the key "key1" and value 42, setting a custom TTL of 100 milliseconds.
+		// This TTL is shorter than the cache's global TTL, ensuring the item will expire 100 milliseconds after being added.
+		cache.Set("key1", 42, 100*time.Millisecond)
+
+		// Pause execution for 300 milliseconds to allow sufficient time for the item's TTL to expire.
+		// This delay ensures that the item should no longer exist in the cache when retrieval is attempted.
+		<-time.After(300 * time.Millisecond)
+
+		// Attempt to retrieve the item associated with the key "key1" from the cache.
+		// Since the item's TTL has expired, the cache should return false, indicating the item is no longer present.
+		_, ok := cache.Get("key1")
+
+		// Validate that the item is not found in the cache by asserting that `ok` is false.
+		// This confirms that the item was correctly expired and removed from the cache.
+		assert.Equal(t, false, ok)
+	})
 }
