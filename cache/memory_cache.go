@@ -168,3 +168,29 @@ func (m *MemoryCache[K, V]) Contains(key K) bool {
 	// Return true if the key exists, false otherwise.
 	return ok
 }
+
+// Remove removes an item from the cache by its key.
+// This method is thread-safe and ensures that the item is properly removed from both
+// the list and the map, as well as from the expiration buckets map.
+// It returns true if the item was found and removed, and false if the key does not exist in the cache.
+func (m *MemoryCache[K, V]) Remove(key K) bool {
+	// Lock the mutex to ensure thread-safe access to the cache's data structures.
+	m.mutex.Lock()
+	// Ensure the mutex is unlocked when the function returns.
+	defer m.mutex.Unlock()
+
+	// Check if the key exists in the cache.
+	if element, ok := m.items[key]; ok {
+		// Remove the item from the list.
+		m.list.Remove(element)
+		// Remove the item from the items map.
+		delete(m.items, key)
+		// Remove the item from the expirationBuckets map.
+		delete(m.expirationBuckets, key)
+		// Return true indicating the item was successfully removed.
+		return true
+	}
+
+	// Return false if the key does not exist in the cache.
+	return false
+}
