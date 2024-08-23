@@ -44,11 +44,11 @@ func TestMemoryCache(t *testing.T) {
 		assert.Equal(t, ttl, cache.ttl, "Expected cache TTL to match the provided TTL")
 	})
 
-	// Begin the test case titled "Set and Fetch" which aims to validate the functionality of
-	// the MemoryCache instance by checking the process of setting and retrieving a cache entry.
-	// This test ensures that the MemoryCache correctly stores a key-value pair with a specified TTL
-	// and that the value can be accurately retrieved within the TTL period. The test also verifies
-	// that the cache behaves as expected by confirming the presence and correctness of the stored value.
+	// Set and Fetch validates the behavior of the MemoryCache when setting and retrieving a value
+	// associated with a specific key. This test ensures that the cache correctly handles insertion
+	// and retrieval of values, updating existing entries as expected. The test sets a key with a value
+	// and verifies that the updated value is correctly retrieved, confirming that the cache operates
+	// as intended when handling single entries and their TTLs.
 	t.Run("Set and Fetch", func(t *testing.T) {
 		// Create a new instance of MemoryCache designed to handle string keys and integer values.
 		// The cache is initialized with a TTL (time-to-live) of 1 second, meaning that stored items
@@ -76,5 +76,40 @@ func TestMemoryCache(t *testing.T) {
 		// This validation ensures that the cache properly handled the insertion and retrieval
 		// of the key-value pair.
 		assert.Equal(t, true, ok, "Expected key 'key1' to exist in cache")
+	})
+
+	// ReInsertion tests the behavior of MemoryCache when setting a key multiple times with different values.
+	// This test ensures that the cache correctly updates the value associated with a key when a new value
+	// is set, and that the updated value is correctly retrieved. The test involves setting the same key twice
+	// with different values and verifying that the cache reflects the latest value as expected.
+	t.Run("ReInsertion", func(t *testing.T) {
+		// Create a new MemoryCache instance with string keys and integer values.
+		// The cache is initialized with a TTL (time-to-live) of 1 second, meaning that entries will expire
+		// after this duration. The TTL parameter is not directly used in this test but is part of the cache setup.
+		cache := NewMemoryCache[string, int](context.Background(), 1*time.Second)
+
+		// Set a key "key1" with the value 42 and a TTL of 3 seconds.
+		// This stores the value 42 under the key "key1" in the cache with the specified TTL.
+		cache.Set("key1", 42, 3*time.Second)
+
+		// Immediately set the same key "key1" with a new value 57 and the same TTL of 3 seconds.
+		// This updates the value associated with "key1" to 57. The TTL remains unchanged.
+		cache.Set("key1", 57, 3*time.Second)
+
+		// Retrieve the value associated with the key "key1" from the cache.
+		// This operation fetches the value currently stored under "key1", which should be the updated value 57.
+		element, ok := cache.Get("key1")
+
+		// Assert that the retrieved element is not nil.
+		// This confirms that the key "key1" exists in the cache and that a value was successfully retrieved.
+		assert.NotNil(t, element, "Expected element to be non-nil")
+
+		// Assert that the retrieved value matches the expected value 57.
+		// This ensures that the cache correctly updated the value when the key was set a second time.
+		assert.Equal(t, 57, element, "Expected element to be 57")
+
+		// Assert that the key "key1" exists in the cache by checking that `ok` is true.
+		// This verifies that the retrieval operation was successful and that the key is present in the cache.
+		assert.True(t, ok, "Expected key 'key1' to exist in cache")
 	})
 }
