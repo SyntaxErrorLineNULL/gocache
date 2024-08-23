@@ -3,6 +3,7 @@ package cache
 import (
 	"container/list"
 	"context"
+	"fmt"
 	"golang.org/x/sync/singleflight"
 	"sync"
 	"time"
@@ -63,7 +64,7 @@ func (m *MemoryCache[K, V]) Set(key K, value V, ttl time.Duration) {
 	// The expiration time is the current time plus the TTL duration.
 	item := &Item[K, V]{Key: key, Value: value, ExpiresAt: time.Now().Add(ttl)}
 
-	// Acquire a write lock to ensure thread safety while updating the cache.
+	// Acquire white lock to ensure thread safety while updating the cache.
 	// This prevents other goroutines from modifying the cache while this operation is in progress.
 	m.mutex.Lock()
 	// Ensure that the lock is released when the function completes, even if an error occurs or an early return happens.
@@ -82,4 +83,73 @@ func (m *MemoryCache[K, V]) Set(key K, value V, ttl time.Duration) {
 	m.expirationBuckets[key] = element
 
 	return
+}
+
+// Get retrieves an item from the cache by its key.
+// If the item is found and has not expired, it is returned along with a boolean true.
+// If the item is not found or has expired, the zero value and boolean false are returned.
+func (m *MemoryCache[K, V]) Get(key K) (V, bool) {
+	// Initialize a variable to hold the result. This will be returned if the key is not found.
+	var res V
+
+	// Format the key into a string for use with singleflight.
+	keyStr := fmt.Sprintf("%v", key)
+
+	// Use singleflight to ensure that multiple concurrent fetches for the same key are only processed once.
+	value, err, _ := m.group.Do(keyStr, func() (interface{}, error) {
+		// Acquire a read lock to ensure thread safety while reading from the cache.
+		m.mutex.RLock()
+		// Retrieve the list element associated with the key.
+		element := m.items[key]
+		// Release the read lock.
+		m.mutex.RUnlock()
+
+		// Check if the item associated with the key exists.
+		if element == nil {
+			// If the item is not found, return nil and an error (nil error here).
+			return nil, nil
+		}
+
+		// Retrieve the item from the element.
+		item := element.Value.(*Item[K, V])
+
+		// Check if the item has expired.
+		if item.ExpiresAt.Before(time.Now()) {
+			// Acquire write lock to safely remove the expired item from the cache.
+			m.mutex.Lock()
+
+			// Remove expired item from the list and the maps.
+			m.list.Remove(element)
+			// Delete the item from the items map.
+			delete(m.items, key)
+			// Delete the item from the expirationBuckets map.
+			delete(m.expirationBuckets, key)
+
+			// Release write lock.
+			m.mutex.Unlock()
+
+			// Return nil, nil indicating item expired.
+			return nil, nil
+		}
+
+		// If the item is found and has not expired, move it to the front of the list (most recently used).
+		m.mutex.Lock()
+		// Move the accessed item to the front of the list (most recently used).
+		m.list.MoveToFront(element)
+		// Set the result to the value of the item.
+		res = item.Value
+		// Release write lock.
+		m.mutex.Unlock()
+
+		// Return the value associated with the key and true.
+		return res, nil
+	})
+
+	if err != nil || value == nil {
+		// Return the zero value and false if the key was not found or item expired.
+		return res, false
+	}
+
+	// Assert and return the fetched value and true.
+	return value.(V), true
 }
