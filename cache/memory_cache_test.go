@@ -388,26 +388,35 @@ func TestMemoryCacheConcurrency(t *testing.T) {
 	// TestConcurrentRemove tests the concurrent removal of cache values.
 	// It ensures that the cache can handle multiple goroutines removing values concurrently.
 	t.Run("TestConcurrentRemove", func(t *testing.T) {
-		// Loop to start multiple goroutines.
+		// Loop to start multiple goroutines for concurrent operations.
+		// This will run the specified number of goroutines to test concurrent cache operations.
 		for i := 0; i < numGoroutines; i++ {
+
 			// Increment the wait group counter for each goroutine.
+			// This ensures that the main test function waits for all goroutines to complete before finishing.
 			wg.Add(1)
 
-			// Launch a goroutine to perform set and remove operations.
+			// Launch a new goroutine to perform cache operations concurrently.
+			// Each goroutine will handle setting and removing a key-value pair in the cache.
 			go func(i int) {
-				// Decrement the counter when the goroutine completes.
+				// Ensure that the wait group counter is decremented when the goroutine completes.
+				// This allows the main test function to wait until all concurrent operations are done.
 				defer wg.Done()
 
-				// Set a key-value pair in the cache.
+				// Set a key-value pair in the cache with a key formatted as "keyX" and a value formatted as "valueX".
+				// The TTL (Time-To-Live) is set to 0, meaning the entry should persist indefinitely unless explicitly removed.
 				cache.Set(fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i), 0)
 
-				// Remove the key from the cache.
+				// Remove the key-value pair from the cache.
+				// This operation should delete the cache entry associated with the key formatted as "keyX".
 				cache.Remove(fmt.Sprintf("key%d", i))
 
-				// Attempt to retrieve the value from the cache.
+				// Attempt to retrieve the value from the cache for the key that was just removed.
+				// This will verify whether the removal operation was successful.
 				_, ok := cache.Get(fmt.Sprintf("key%d", i))
 
-				// Verify that the value was not found in the cache.
+				// Assert that the value was not found in the cache after removal.
+				// The assertion ensures that the cache does not contain the removed key, confirming the removal was effective.
 				assert.False(t, ok, fmt.Sprintf("Expected key key%d to be removed from cache", i))
 			}(i)
 		}
