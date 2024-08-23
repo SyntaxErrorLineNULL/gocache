@@ -60,6 +60,12 @@ func (m *MemoryCache[K, V]) Set(key K, value V, ttl time.Duration) {
 		ttl = DefaultTTL
 	}
 
+	// If the key or value is nil, return immediately to avoid adding invalid entries to the cache.
+	// This ensures that the cache only stores valid, non-nil keys and values.
+	if key == nil || value == nil {
+		return
+	}
+
 	// Create a new item with the given key and value, and set its expiration time.
 	// The expiration time is the current time plus the TTL duration.
 	item := &Item[K, V]{Key: key, Value: value, ExpiresAt: time.Now().Add(ttl)}
