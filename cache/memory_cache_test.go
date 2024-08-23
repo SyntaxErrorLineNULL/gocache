@@ -161,4 +161,24 @@ func TestMemoryCache(t *testing.T) {
 		// This ensures that the retrieval operation was successful and that the key is present.
 		assert.True(t, ok, "Expected key 'key2' to exist in cache")
 	})
+
+	// NotFound tests the behavior of the MemoryCache when attempting to retrieve a value
+	// associated with a key that does not exist in the cache. This test is designed to validate
+	// that the cache correctly handles requests for keys that have not been stored. By checking
+	// that the cache returns an indication that the key is not present, we ensure that the
+	// cache's `Get` method properly differentiates between existing and non-existing keys,
+	// thereby confirming its correctness in managing cache entries and reporting their status.
+	t.Run("NotFound", func(t *testing.T) {
+		// Create a new MemoryCache instance with string keys and integer values.
+		// The cache is initialized with a TTL (Time-To-Live) of 1 second, specifying that cache entries will expire after this duration.
+		cache := NewMemoryCache[string, int](context.Background(), 1*time.Second)
+
+		// Attempt to fetch a value associated with the key "nonexistent" from the cache.
+		// Since the key "nonexistent" was not previously set, we expect the cache to return a zero value and a boolean indicating absence.
+		_, ok := cache.Get("nonexistent")
+		// Assert that the result indicates the key does not exist in the cache.
+		// The `ok` variable should be `false` to confirm that the key "nonexistent" was not found in the cache.
+		// This test verifies that the cache correctly handles and reports missing keys.
+		assert.Equal(t, false, ok, "Expected key 'nonexistent' not to exist in cache")
+	})
 }
