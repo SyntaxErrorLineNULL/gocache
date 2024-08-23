@@ -112,4 +112,53 @@ func TestMemoryCache(t *testing.T) {
 		// This verifies that the retrieval operation was successful and that the key is present in the cache.
 		assert.True(t, ok, "Expected key 'key1' to exist in cache")
 	})
+
+	// Contains tests the behavior of MemoryCache when checking if keys are present in the cache.
+	// This test ensures that the cache correctly reports the presence of keys after they have been set,
+	// and verifies that the values associated with those keys are accurate. The test involves setting
+	// key-value pairs with and without TTL, then confirming their presence and correctness in the cache.
+	t.Run("Contains", func(t *testing.T) {
+		// Create a new context with a cancellation function for managing the lifecycle of the cache.
+		// The context will be used to signal when the cache operations should be terminated or cleaned up.
+		ctx, cancel := context.WithCancel(context.Background())
+		// Ensure that the context cancellation function is called when the test completes.
+		// This will release resources associated with the context and prevent potential leaks.
+		defer cancel()
+
+		// Initialize a new MemoryCache instance with string keys and string values.
+		// The cache is created with a TTL (Time-To-Live) of 1 second, specifying how long items should remain in the cache before expiring.
+		// This cache will use the context to manage its lifecycle and ensure it adheres to the TTL constraints.
+		cache := NewMemoryCache[string, string](ctx, 1*time.Second)
+
+		// Set a key "key1" with the value "value1" and no TTL (TTL of 0).
+		// This stores the value "value1" under the key "key1" in the cache without any expiration time.
+		cache.Set("key1", "value1", 0)
+		// Assert that the cache contains the key "key1".
+		// This verifies that the key was successfully added to the cache and is present.
+		assert.True(t, cache.Contains("key1"), "Expected cache to contain key 'key1'")
+
+		// Fetch the value associated with "key1" from the cache.
+		// This retrieves the value stored under "key1" to confirm that it matches the expected value.
+		val, ok := cache.Get("key1")
+		// Assert that the key "key1" exists in the cache by checking that `ok` is true.
+		// This ensures that the retrieval operation was successful and that the key is present.
+		assert.True(t, ok, "Expected key 'key1' to exist in cache")
+		// Assert that the value retrieved for "key1" is "value1".
+		// This confirms that the correct value is associated with the key.
+		assert.Equal(t, "value1", val, "Expected value for 'key1' to be 'value1'")
+
+		// Set another key "key2" with the value "value2" and a TTL of 1 second.
+		// This stores the value "value2" under the key "key2" in the cache with a specified expiration time.
+		cache.Set("key2", "value2", time.Second)
+		// Assert that the cache contains the key "key2".
+		// This verifies that the key was successfully added to the cache and is present.
+		assert.True(t, cache.Contains("key2"), "Expected cache to contain key 'key2'")
+
+		// Fetch the value associated with "key2" from the cache.
+		// This retrieves the value stored under "key2" to confirm that it matches the expected value.
+		_, ok = cache.Get("key2")
+		// Assert that the key "key2" exists in the cache by checking that `ok` is true.
+		// This ensures that the retrieval operation was successful and that the key is present.
+		assert.True(t, ok, "Expected key 'key2' to exist in cache")
+	})
 }
