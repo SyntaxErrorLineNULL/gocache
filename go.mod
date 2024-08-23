@@ -1,4 +1,4 @@
-module gocache
+module github.com/SyntaxErrorLineNULL/gocache
 
 go 1.22
 
