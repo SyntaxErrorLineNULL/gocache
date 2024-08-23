@@ -30,3 +30,22 @@ type MemoryCache[K comparable, V any] struct {
 	// New field for singleflight.Group
 	group singleflight.Group
 }
+
+// NewMemoryCache creates a new MemoryCache instance.
+// It initializes the cache with the provided context and starts a background
+// goroutine that periodically deletes expired items from the cache.
+func NewMemoryCache[K comparable, V any](ctx context.Context, ttl time.Duration) *MemoryCache[K, V] {
+	// If no TTL is provided (ttl == 0), use the default TTL.
+	if ttl == 0 {
+		ttl = DefaultTTL
+	}
+
+	// Initialize a new MemoryCache instance with an empty list and map.
+	return &MemoryCache[K, V]{
+		parentCtx:         ctx,
+		list:              list.New(),
+		items:             make(map[K]*list.Element),
+		expirationBuckets: make(map[K]*list.Element),
+		ttl:               ttl,
+	}
+}
