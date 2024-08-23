@@ -236,4 +236,36 @@ func TestMemoryCache(t *testing.T) {
 		// This ensures that "key1" no longer exists in the cache, confirming that the removal was effective.
 		assert.False(t, ok, "Expected key 'key1' to be removed from cache, but it was still found")
 	})
+
+	// RemoveAndContains tests the behavior of the MemoryCache when removing a key-value pair and then checking for its existence.
+	// This test case first ensures that attempting to remove a non-existent key returns false, indicating that nothing was removed.
+	// It then adds a key-value pair to the cache without setting a TTL (Time-To-Live), removes it, and verifies that the key no longer exists in the cache.
+	// The purpose of this test is to confirm that the cache correctly handles removal operations and accurately reflects the state of its contents after modifications.
+	t.Run("RemoveAndContains", func(t *testing.T) {
+		// Set up a new context to control the lifecycle of the MemoryCache instance.
+		// The cancel function allows the context to be terminated early if needed.
+		ctx, cancel := context.WithCancel(context.Background())
+		// Ensure the cancel function is called to clean up the context once the test is done.
+		defer cancel()
+
+		// Initialize a new MemoryCache instance that will store string keys and values.
+		// The cache is created with a TTL (Time-To-Live) of 1 second, meaning entries will expire after this period unless specified otherwise.
+		cache := NewMemoryCache[string, string](ctx, 1*time.Second)
+
+		// Attempt to remove a key ("nonexistent") that doesn't exist in the cache.
+		// Since the key is not present, the Remove method should return false, indicating that no item was removed.
+		assert.False(t, cache.Remove("nonexistent"), "Expected Remove to return false for non-existent key")
+
+		// Add a key-value pair ("key1", "value1") to the cache without specifying a TTL.
+		// By not setting a TTL, this entry is set to last indefinitely, or until manually removed.
+		cache.Set("key1", "value1", 0)
+
+		// Remove the previously added key "key1" from the cache.
+		// The Remove method should return true, indicating that the key existed and was successfully removed.
+		assert.True(t, cache.Remove("key1"), "Expected Remove to return true for existing key")
+
+		// After removing "key1", check if it still exists in the cache using the Contains method.
+		// The Contains method should return false, confirming that "key1" has been completely removed.
+		assert.False(t, cache.Contains("key1"), "Expected key 'key1' to be removed from cache")
+	})
 }
