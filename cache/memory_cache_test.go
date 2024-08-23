@@ -181,4 +181,26 @@ func TestMemoryCache(t *testing.T) {
 		// This test verifies that the cache correctly handles and reports missing keys.
 		assert.Equal(t, false, ok, "Expected key 'nonexistent' not to exist in cache")
 	})
+
+	// GetNil tests the behavior of the MemoryCache when attempting to retrieve a value
+	// associated with a key that is `nil`. This scenario is designed to validate how the
+	// cache handles requests for keys that are not properly initialized or are explicitly set as `nil`.
+	// By passing a `nil` key to the cache's `Get` method, this test ensures that the cache
+	// correctly identifies the absence of such a key and handles it appropriately.
+	// We expect the cache to return a zero value and a boolean indicating that the key is not present.
+	t.Run("GetNil", func(t *testing.T) {
+		// Create a new MemoryCache instance with interface{} as the key type and integer as the value type.
+		// The cache is initialized with a TTL (Time-To-Live) of 1 second, specifying that cache entries will expire after this duration.
+		cache := NewMemoryCache[interface{}, int](context.Background(), 1*time.Second)
+
+		// Attempt to fetch a value associated with a `nil` key from the cache.
+		// Since `nil` is not a valid key for caching purposes, we expect the cache to return a zero value
+		// and a boolean indicating that the key is not found.
+		_, ok := cache.Get(nil)
+
+		// Assert that the result indicates the key `nil` does not exist in the cache.
+		// The `ok` variable should be `false` to confirm that the cache handles `nil` keys correctly
+		// by indicating that such a key is not present in the cache.
+		assert.Equal(t, false, ok, "Expected key 'nil' not to exist in cache")
+	})
 }
