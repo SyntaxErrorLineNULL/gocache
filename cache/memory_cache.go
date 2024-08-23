@@ -207,3 +207,37 @@ func (m *MemoryCache[K, V]) Len() int {
 	// Return the length of the list, which represents the number of items in the cache.
 	return m.list.Len()
 }
+
+// deleteExpiredData removes all expired items from the cache.
+// It acquires write lock to ensure thread safety during the cleanup process.
+func (m *MemoryCache[K, V]) deleteExpiredData() {
+	// Declare a variable to keep track of the last processed element in the list.
+	var lastElement *list.Element
+
+	// Lock the mutex to ensure thread-safe access to the cache's data structures.
+	m.mutex.Lock()
+	// Ensure the mutex is unlocked when the function returns.
+	defer m.mutex.Unlock()
+
+	// Start from the back (potentially older entries)
+	lastElement = m.list.Back()
+	// Iterate through the list from the back to the front.
+	for element := lastElement; element != nil; element = element.Prev() {
+		// Retrieve the cache item from the list element.
+		item := element.Value.(*Item[K, V])
+		// Check if the item has expired.
+		if item.ExpiresAt.Before(time.Now()) {
+			// Remove the expired item from the list.
+			m.list.Remove(element)
+			// Remove the expired item from the items map.
+			delete(m.items, item.Key)
+			// Remove the expired item from the expirationBuckets map.
+			delete(m.expirationBuckets, item.Key)
+			// Update the last processed element for the next iteration.
+			lastElement = element.Prev()
+		} else {
+			// Break the loop if we encounter a non-expired item
+			break
+		}
+	}
+}
