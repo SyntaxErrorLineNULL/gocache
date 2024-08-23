@@ -10,7 +10,7 @@ lint: ## Run linter
 # Target: test
 # Description: Run all tests in the project.
 test: ## Run tests
-	go test -race ./...
+	go test -race -v ./...
 
 # Target: generate
 # Description: Generate code, particularly mocks using mockery.
