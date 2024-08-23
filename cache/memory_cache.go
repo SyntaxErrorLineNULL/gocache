@@ -92,6 +92,12 @@ func (m *MemoryCache[K, V]) Get(key K) (V, bool) {
 	// Initialize a variable to hold the result. This will be returned if the key is not found.
 	var res V
 
+	// Check if the key is nil. If so, return the zero value and false immediately.
+	// This ensures that the cache does not attempt to process a nil key, which is not allowed.
+	if key == nil {
+		return res, false
+	}
+
 	// Format the key into a string for use with singleflight.
 	keyStr := fmt.Sprintf("%v", key)
 
