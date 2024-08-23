@@ -268,4 +268,23 @@ func TestMemoryCache(t *testing.T) {
 		// The Contains method should return false, confirming that "key1" has been completely removed.
 		assert.False(t, cache.Contains("key1"), "Expected key 'key1' to be removed from cache")
 	})
+
+	// RemoveNotFoundRecord tests the MemoryCache's handling of removal attempts for keys that do not exist in the cache.
+	// This test case ensures that the cache's Remove method behaves correctly when it is asked to remove a key that has never been added.
+	// Specifically, it verifies that the method does not alter the cache's state and returns false, clearly indicating that the removal operation
+	// had no effect because the key was not found. This is crucial for maintaining the integrity of the cache's contents and ensuring that
+	// no unintended side effects occur when attempting to remove non-existent items.
+	t.Run("RemoveNotFoundRecord", func(t *testing.T) {
+		// Initialize a new MemoryCache instance with string keys and integer values.
+		// The cache is set with a TTL (Time-To-Live) of 1 second, meaning any entries (if they existed) would expire after this period.
+		cache := NewMemoryCache[string, int](context.Background(), 1*time.Second)
+
+		// Attempt to remove a key "nonexistent" which hasn't been added to the cache.
+		// Since the key doesn't exist, the Remove method should return false, signifying that nothing was removed.
+		ok := cache.Remove("nonexistent")
+
+		// Verify that the return value of the Remove method is false.
+		// The assertion checks that the removal operation correctly identifies the key's absence.
+		assert.Equal(t, false, ok, "Expected Remove to return false for non-existent key")
+	})
 }
