@@ -208,6 +208,28 @@ func (m *MemoryCache[K, V]) Len() int {
 	return m.list.Len()
 }
 
+// garbageCollection is a method that periodically deletes expired items from the cache.
+// It runs in its own goroutine and uses a ticker to trigger the cleanup process
+// at regular intervals defined by DefaultTTL.
+func (m *MemoryCache[K, V]) garbageCollection() {
+	// Create a ticker that ticks at intervals defined by DefaultTTL.
+	ticker := time.NewTicker(m.ttl)
+	// Stop the ticker when the method exits to release resources.
+	defer ticker.Stop()
+
+	for {
+		select {
+		// Trigger the deletion of expired data at each tick.
+		case <-ticker.C:
+			m.deleteExpiredData()
+
+		// Exit the collector when the parent context is done (e.g., when the application is shutting down).
+		case <-m.parentCtx.Done():
+			return
+		}
+	}
+}
+
 // deleteExpiredData removes all expired items from the cache.
 // It acquires write lock to ensure thread safety during the cleanup process.
 func (m *MemoryCache[K, V]) deleteExpiredData() {
